@@ -5,9 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Instagramアシスタント</title>
   <style>
-    /* ＝＝＝ デザイン（CSS） ＝＝＝ */
+    /* デザイン（CSS）- 以前と同じもの。一部Instagramリンク用のスタイルを追加 */
     :root {
-      /* Instagram風のグラデーションカラー */
       --ig-gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
       --bg-color: #f9fafb;
       --box-bg: #ffffff;
@@ -23,7 +22,7 @@
       line-height: 1.6;
     }
     .container {
-      max-width: 500px; /* スマホで見やすい幅 */
+      max-width: 500px;
       margin: 0 auto;
       background: var(--box-bg);
       padding: 24px;
@@ -48,7 +47,6 @@
       margin-bottom: 12px;
       font-size: 1.1rem;
     }
-    /* 画像アップロード部分 */
     .image-upload-area {
       border: 2px dashed #bc1888;
       border-radius: 12px;
@@ -66,7 +64,6 @@
       margin-top: 12px;
       display: none;
     }
-    /* ペルソナボタン */
     .persona-btns {
       display: flex;
       gap: 10px;
@@ -87,7 +84,6 @@
       border: none;
       font-weight: bold;
     }
-    /* 言語チェックボックス */
     .lang-checkboxes {
       display: flex;
       gap: 15px;
@@ -100,7 +96,6 @@
       font-size: 1rem;
       cursor: pointer;
     }
-    /* メイン生成ボタン */
     .btn-generate {
       width: 100%;
       padding: 16px;
@@ -117,7 +112,6 @@
     .btn-generate:hover { transform: translateY(-2px); }
     .btn-generate:disabled { background: #cccccc; cursor: not-allowed; box-shadow: none; transform: none; }
     
-    /* 結果表示エリア */
     #resultArea { display: none; margin-top: 24px; }
     .result-box {
       background: #f3f4f6;
@@ -127,6 +121,7 @@
     }
     .result-lang { font-weight: bold; margin-bottom: 8px; color: #bc1888; }
     .result-text { white-space: pre-wrap; font-size: 0.95rem; }
+    
     .btn-copy {
       width: 100%;
       padding: 12px;
@@ -137,6 +132,22 @@
       font-weight: bold;
       cursor: pointer;
       margin-top: 8px;
+    }
+    /* 【追加】Instagramアプリを起動するボタンのスタイル */
+    .btn-instagram {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: var(--ig-gradient);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 12px;
+      text-align: center;
+      text-decoration: none;
+      box-sizing: border-box;
     }
     #loadingMsg { display: none; text-align: center; color: #bc1888; font-weight: bold; margin-top: 10px; }
   </style>
@@ -156,14 +167,13 @@
     <img id="previewImage" alt="プレビュー">
   </div>
 
-  <!-- Step 2: お店のスタイル -->
+  <!-- Step 2: お店のスタイル (うなぎ店にアップグレード！) -->
   <div class="step">
     <div class="step-title">② お店のスタイルをえらぶ</div>
     <div class="persona-btns" id="personaContainer">
-      <!-- data-persona の中身がAIへの指示になります -->
-      <button class="btn-persona active" data-persona="高級感と威厳のある老舗の寿司店・和食店。">高級和食・寿司</button>
-      <button class="btn-persona" data-persona="親しみやすく活気のある大衆食堂や居酒屋。">活気ある居酒屋</button>
-      <button class="btn-persona" data-persona="おしゃれで落ち着いた雰囲気のカフェ。">おしゃれカフェ</button>
+      <button class="btn-persona active" data-persona="高級感と威厳のある老舗の寿司店・和食店。新鮮なネタの魅力や美しさを伝える、丁寧で品格のある口調。">高級和食・寿司</button>
+      <button class="btn-persona" data-persona="長年愛される、炭火焼きと秘伝のタレにこだわる伝統的なうなぎ専門店。炭火の香ばしさ、タレの深い味わい、身のふっくらとした食感や焼き色の美しさを情緒豊かに伝える、温かみと自信に満ちた口調。">うなぎ店</button>
+      <button class="btn-persona" data-persona="おしゃれで落ち着いた雰囲気のカフェ。カジュアルで親しみやすく、写真の盛り付けの可愛さやリラックスできる空間の魅力を伝えるトーン。">おしゃれカフェ</button>
     </div>
   </div>
 
@@ -180,21 +190,26 @@
 
   <!-- Step 4: 生成ボタン -->
   <button class="btn-generate" id="generateBtn">✨ AIで文章を作成する！</button>
-  <div id="loadingMsg">AIが一生懸命考えています...（10秒ほどお待ちください）⏳</div>
+  <div id="loadingMsg">AIが一生懸命写真を分析して、文章を考えています...⏳</div>
 
   <!-- 結果表示エリア -->
   <div id="resultArea">
     <div class="step-title">🎉 完成しました！</div>
     <div id="resultsContainer"></div>
+    
+    <!-- 【追加】Instagramアプリへ直接繋がる導線 -->
+    <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="btn-instagram">
+      🚀 コピーした文章を持ってInstagramを開く
+    </a>
   </div>
 </div>
 
 <script>
-  /* ＝＝＝ 動き（JavaScript） ＝＝＝ */
   let base64Image = "";
-  let selectedPersona = "高級感と威厳のある老舗の寿司店・和食店。"; // 初期値
+  // 初期ペルソナ（寿司・和食）
+  let selectedPersona = "高級感と威厳のある老舗の寿司店・和食店。新鮮なネタの魅力や美しさを伝える、丁寧で品格のある口調。"; 
 
-  // 1. 画像が選ばれたときの処理（プレビューとBase64変換）
+  // 1. 画像処理
   document.getElementById('imageInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -204,14 +219,12 @@
       const imgEle = document.getElementById('previewImage');
       imgEle.src = event.target.result;
       imgEle.style.display = 'block';
-      
-      // Base64文字列から "data:image/jpeg;base64," の部分を取り除く（Gemini APIの仕様に合わせる）
       base64Image = event.target.result.split(',')[1];
     };
     reader.readAsDataURL(file);
   });
 
-  // 2. ペルソナボタンが押されたときの処理（色を変える）
+  // 2. ペルソナボタン
   const personaBtns = document.querySelectorAll('.btn-persona');
   personaBtns.forEach(btn => {
     btn.addEventListener('click', function() {
@@ -221,21 +234,19 @@
     });
   });
 
-  // 3. 生成ボタンが押されたときの処理
+  // 3. 生成処理
   document.getElementById('generateBtn').addEventListener('click', async function() {
     if (!base64Image) {
       alert("まずは料理の写真を選んでください！");
       return;
     }
 
-    // 選ばれた言語を集める
     const checkedLangs = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
     if (checkedLangs.length === 0) {
       alert("少なくとも1つの言語を選んでください！");
       return;
     }
 
-    // 画面の表示を「ローディング中」に変える
     const btn = document.getElementById('generateBtn');
     const loadingMsg = document.getElementById('loadingMsg');
     const resultArea = document.getElementById('resultArea');
@@ -245,8 +256,6 @@
     resultArea.style.display = "none";
 
     try {
-      // 設置したバックエンド（API）にデータを送る
-      // Cloudflare Pages Functionsの場合、/api/generate でアクセスできます
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -261,38 +270,31 @@
         throw new Error("サーバーとの通信に失敗しました。");
       }
 
-      // 結果を受け取る
       const responseText = await response.text();
-      // AIがMarkdownのコードブロック(```json ... ```)を含めて返すことがあるので除去する
       const cleanJsonStr = responseText.replace(/```json\n?|```/g, '');
       const data = JSON.parse(cleanJsonStr);
 
-      // 結果を画面に表示する
       const resultsContainer = document.getElementById('resultsContainer');
-      resultsContainer.innerHTML = ""; // 前の結果を消す
+      resultsContainer.innerHTML = ""; 
 
       for (const [lang, text] of Object.entries(data)) {
-        // 結果の箱を作る
         const box = document.createElement('div');
         box.className = 'result-box';
         
-        // 言語名
         const langTitle = document.createElement('div');
         langTitle.className = 'result-lang';
         langTitle.textContent = lang;
         
-        // 文章
         const textArea = document.createElement('div');
         textArea.className = 'result-text';
         textArea.textContent = text;
         
-        // コピーボタン
         const copyBtn = document.createElement('button');
         copyBtn.className = 'btn-copy';
         copyBtn.textContent = '📋 この文章をコピーする';
         copyBtn.onclick = () => {
           navigator.clipboard.writeText(text).then(() => {
-            alert(`【${lang}】の文章をコピーしました！\nInstagramを開いて貼り付けてください。`);
+            alert(`【${lang}】の文章をコピーしました！\n下のボタンからInstagramを開いて貼り付けてください。`);
           });
         };
 
@@ -308,7 +310,6 @@
       console.error(error);
       alert("文章の作成中にエラーが発生しました。もう一度お試しください。");
     } finally {
-      // ローディングを終わらせてボタンを元に戻す
       btn.disabled = false;
       loadingMsg.style.display = "none";
     }
