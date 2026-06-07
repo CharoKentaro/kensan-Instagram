@@ -214,8 +214,8 @@
     <div class="step-title">🎉 完成しました！</div>
     <div id="resultsContainer"></div>
     
-    <!-- Instagramアプリへ直接繋がる導線 -->
-    <a href="#" class="btn-instagram" id="instaBtn">
+    <!-- 【修正】安全な直リンクにアップグレード -->
+    <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="btn-instagram" id="instaBtn">
       🚀 コピーした文章を持ってInstagramを開く
     </a>
   </div>
@@ -233,7 +233,6 @@
     const loadingMsg = document.getElementById('loadingMsg');
     const resultArea = document.getElementById('resultArea');
     const resultsContainer = document.getElementById('resultsContainer');
-    const instaBtn = document.getElementById('instaBtn');
     const personaBtns = document.querySelectorAll('.btn-persona');
 
     // 1. 画像選択
@@ -263,22 +262,7 @@
       });
     });
 
-    // 3. Instagram起動
-    function openInstagramApp() {
-      const appUrl = "instagram://app";
-      const webUrl = "https://www.instagram.com/";
-      window.location.href = appUrl;
-      setTimeout(() => {
-        window.open(webUrl, "_blank");
-      }, 500);
-    }
-
-    instaBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      openInstagramApp();
-    });
-
-    // 4. 生成処理
+    // 3. 生成処理
     generateBtn.addEventListener('click', async () => {
       if (!base64Image) {
         alert("まずは料理の写真を選んでください！");
