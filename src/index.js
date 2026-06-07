@@ -5,7 +5,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // 画面（フロントエンド）から「/api/generate」宛てにリクエストが来たら実行
+    // 画面から「/api/generate」宛てにリクエストが来たら実行
     if (url.pathname === "/api/generate" && request.method === "POST") {
       const GEMINI_API_KEY = env.GEMINI_API_KEY;
 
@@ -13,12 +13,10 @@ export default {
         const body = await request.json();
         const { imageBase64, languages, persona } = body;
 
-        // 画像が送られていない場合のエラー処理
         if (!imageBase64) {
           return new Response(JSON.stringify({ error: "画像がありません。" }), { status: 400 });
         }
 
-        // Kさんのために自動で季節感を組み込む
         const currentMonth = new Date().getMonth() + 1;
 
         // 【画像認識を極限まで強化したシステムプロンプト】
@@ -35,7 +33,7 @@ export default {
           ・各言語の末尾にハッシュタグを5〜8個つけてください。
 
           【超重要：出力形式に関する厳格なルール】
-          必ず指定のJSON形式（キーが言語名、値がテキスト）のみを出力してください。
+          必ず指定 of JSON形式（キーが言語名、値がテキスト）のみを出力してください。
           「わかりました」「以下に出力します」などの前置き、挨拶、説明、Markdown記法は【一切禁止】です。波括弧 {} から始まる純粋なJSON文字列だけを返してください。
         `;
 
