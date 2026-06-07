@@ -1,9 +1,11 @@
 // src/index.js
+// 心臓部: Gemini 2.5 Flash APIを呼び出し、Instagram用の文章を生成する処理
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // 画面（フロントエンド）から「/api/generate」宛てにリクエストが来たら実行
     if (url.pathname === "/api/generate" && request.method === "POST") {
       const GEMINI_API_KEY = env.GEMINI_API_KEY;
 
@@ -11,12 +13,15 @@ export default {
         const body = await request.json();
         const { imageBase64, languages, persona } = body;
 
+        // 画像が送られていない場合のエラー処理
         if (!imageBase64) {
           return new Response(JSON.stringify({ error: "画像がありません。" }), { status: 400 });
         }
 
+        // Kさんのために自動で季節感を組み込む
         const currentMonth = new Date().getMonth() + 1;
 
+        // 【画像認識を極限まで強化したシステムプロンプト】
         const systemPrompt = `
           あなたは世界トップクラスの飲食・SNSマーケターであり、${persona}です。
           現在 ${currentMonth}月 です。この季節感や旬の要素を自然に取り入れてください。
@@ -73,6 +78,7 @@ export default {
       }
     }
 
+    // 「/api/generate」以外へのアクセスは、ホームページ（index.html）として表示
     return env.ASSETS.fetch(request);
   }
 };
