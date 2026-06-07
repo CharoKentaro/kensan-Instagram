@@ -1,8 +1,213 @@
-/* public/index.html の <script> 以降をこれに置き換えてください */
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Instagramアシスタント</title>
+  <style>
+    /* ＝＝＝ デザイン（CSS） ＝＝＝ */
+    :root {
+      var(--ig-gradient): linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      --bg-color: #f9fafb;
+      --box-bg: #ffffff;
+      --text-main: #333333;
+      --border-color: #e5e7eb;
+    }
+    body {
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: var(--box-bg);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.5rem;
+      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-top: 0;
+    }
+    .step {
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .step-title {
+      font-weight: bold;
+      margin-bottom: 12px;
+      font-size: 1.1rem;
+    }
+    .image-upload-area {
+      border: 2px dashed #bc1888;
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      background-color: #fff9fc;
+      transition: 0.3s;
+    }
+    .image-upload-area:hover { background-color: #ffeef7; }
+    #imageInput { display: none; }
+    #previewImage {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-top: 12px;
+      display: none;
+    }
+    .persona-btns {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-persona {
+      padding: 10px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: 0.2s;
+    }
+    .btn-persona.active {
+      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      color: white;
+      border: none;
+      font-weight: bold;
+    }
+    .lang-checkboxes {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    .lang-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .btn-generate {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 30px;
+      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      color: white;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(220, 39, 67, 0.3);
+      transition: 0.3s;
+    }
+    .btn-generate:hover { transform: translateY(-2px); }
+    .btn-generate:disabled { background: #cccccc; cursor: not-allowed; box-shadow: none; transform: none; }
+    
+    #resultArea { display: none; margin-top: 24px; }
+    .result-box {
+      background: #f3f4f6;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .result-lang { font-weight: bold; margin-bottom: 8px; color: #bc1888; }
+    .result-text { white-space: pre-wrap; font-size: 0.95rem; }
+    
+    .btn-copy {
+      width: 100%;
+      padding: 12px;
+      background: #333;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn-instagram {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 12px;
+      text-align: center;
+      text-decoration: none;
+      box-sizing: border-box;
+    }
+    #loadingMsg { display: none; text-align: center; color: #bc1888; font-weight: bold; margin-top: 10px; }
+  </style>
+</head>
+<body>
 
+<div class="container">
+  <h1>🍣 Instagram投稿アシスタント</h1>
+
+  <!-- Step 1: 画像 -->
+  <div class="step">
+    <div class="step-title">① 料理の写真をえらぶ</div>
+    <div class="image-upload-area" onclick="document.getElementById('imageInput').click()">
+      📷 タップして写真を選択
+    </div>
+    <input type="file" id="imageInput" accept="image/jpeg, image/png">
+    <img id="previewImage" alt="プレビュー">
+  </div>
+
+  <!-- Step 2: お店のスタイル -->
+  <div class="step">
+    <div class="step-title">② お店のスタイルをえらぶ</div>
+    <div class="persona-btns" id="personaContainer">
+      <button class="btn-persona active" data-persona="高級感と威厳のある老舗の寿司店・和食店。新鮮なネタの魅力や美しさを伝える、丁寧で品格のある口調。">高級和食・寿司</button>
+      <button class="btn-persona" data-persona="長年愛される、炭火焼きと秘伝のタレにこだわる伝統的なうなぎ専門店。炭火の香ばしさ、タレの深い味わい、身のふっくらとした食感や焼き色の美しさを情緒豊かに伝える、温かみと自信に満ちた口調。">うなぎ店</button>
+      <button class="btn-persona" data-persona="おしゃれで落ち着いた雰囲気のカフェ。カジュアルで親しみやすく、写真の盛り付けの可愛さやリラックスできる空間の魅力を伝えるトーン。">おしゃれカフェ</button>
+    </div>
+  </div>
+
+  <!-- Step 3: 言語 -->
+  <div class="step">
+    <div class="step-title">③ 作成する言語をえらぶ</div>
+    <div class="lang-checkboxes">
+      <label class="lang-label"><input type="checkbox" value="日本語" checked> 🇯🇵 日本語</label>
+      <label class="lang-label"><input type="checkbox" value="English"> 🇬🇧 英語</label>
+      <label class="lang-label"><input type="checkbox" value="中文"> 🇨🇳 中国語</label>
+      <label class="lang-label"><input type="checkbox" value="한국어"> 🇰🇷 韓国語</label>
+    </div>
+  </div>
+
+  <!-- Step 4: 生成ボタン -->
+  <button class="btn-generate" id="generateBtn">✨ AIで文章を作成する！</button>
+  <div id="loadingMsg">AIが一生懸命写真を分析して、文章を考えています...⏳</div>
+
+  <!-- 結果表示エリア -->
+  <div id="resultArea">
+    <div class="step-title">🎉 完成しました！</div>
+    <div id="resultsContainer"></div>
+    
+    <!-- Instagramアプリへ直接繋がる導線 -->
+    <a href="#" class="btn-instagram" id="instaBtn">
+      🚀 コピーした文章を持ってInstagramを開く
+    </a>
+  </div>
+</div>
+
+<script>
   let base64Image = "";
   let selectedPersona = "高級感と威厳のある老舗の寿司店・和食店。新鮮なネタの魅力や美しさを伝える、丁寧で品格のある口調。"; 
 
+  // 1. 画像処理
   document.getElementById('imageInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -17,6 +222,7 @@
     reader.readAsDataURL(file);
   });
 
+  // 2. ペルソナボタン
   const personaBtns = document.querySelectorAll('.btn-persona');
   personaBtns.forEach(btn => {
     btn.addEventListener('click', function() {
@@ -26,114 +232,11 @@
     });
   });
 
-  // 【追加】Instagramアプリを強制的に開く賢い機能
+  // 3. Instagramアプリを強制的に開く機能
   function openInstagramApp() {
-    // スマホのInstagramアプリを起動する魔法のURL（URLスキーム）
     const appUrl = "instagram://app";
-    // アプリが入ってなかった時用の通常のWebリンク
     const webUrl = "https://www.instagram.com/";
-
-    // まずはアプリを開こうとしてみる
     window.location.href = appUrl;
-
-    // 0.5秒待っても画面が切り替わらなければ（＝アプリが入っていなければ）、Web版を開く
     setTimeout(function() {
       window.open(webUrl, "_blank");
-    }, 500);
-  }
-
-  document.getElementById('generateBtn').addEventListener('click', async function() {
-    if (!base64Image) {
-      alert("まずは料理の写真を選んでください！");
-      return;
-    }
-
-    const checkedLangs = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
-    if (checkedLangs.length === 0) {
-      alert("少なくとも1つの言語を選んでください！");
-      return;
-    }
-
-    const btn = document.getElementById('generateBtn');
-    const loadingMsg = document.getElementById('loadingMsg');
-    const resultArea = document.getElementById('resultArea');
-    
-    btn.disabled = true;
-    loadingMsg.style.display = "block";
-    resultArea.style.display = "none";
-
-    try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageBase64: base64Image,
-          languages: checkedLangs,
-          persona: selectedPersona
-        })
-      });
-
-      if (!response.ok) {
-        const errorDetail = await response.text();
-        throw new Error(`サーバー通信エラー: ${errorDetail}`);
-      }
-
-      const responseText = await response.text();
-      
-      // 【超強化】AIが余計な言葉を混ぜてきても、データ部分 { } だけを強制的に抜き出す
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error("AIが正しいデータを作成できませんでした。");
-      }
-      
-      const cleanJsonStr = jsonMatch[0];
-      const data = JSON.parse(cleanJsonStr);
-
-      const resultsContainer = document.getElementById('resultsContainer');
-      resultsContainer.innerHTML = ""; 
-
-      for (const [lang, text] of Object.entries(data)) {
-        const box = document.createElement('div');
-        box.className = 'result-box';
-        
-        const langTitle = document.createElement('div');
-        langTitle.className = 'result-lang';
-        langTitle.textContent = lang;
-        
-        const textArea = document.createElement('div');
-        textArea.className = 'result-text';
-        textArea.textContent = text;
-        
-        const copyBtn = document.createElement('button');
-        copyBtn.className = 'btn-copy';
-        copyBtn.textContent = '📋 この文章をコピーする';
-        copyBtn.onclick = () => {
-          navigator.clipboard.writeText(text).then(() => {
-            alert(`【${lang}】の文章をコピーしました！`);
-          });
-        };
-
-        box.appendChild(langTitle);
-        box.appendChild(textArea);
-        box.appendChild(copyBtn);
-        resultsContainer.appendChild(box);
-      }
-
-      // 【修正】Instagramを開くボタンの動作を変更
-      const instaBtn = document.querySelector('.btn-instagram');
-      instaBtn.href = "#"; // 通常のリンクジャンプを無効化
-      instaBtn.onclick = function(e) {
-        e.preventDefault();
-        openInstagramApp();
-      };
-
-      resultArea.style.display = "block";
-
-    } catch (error) {
-      console.error(error);
-      alert(`エラーが発生しました。\n詳細: ${error.message}`);
-    } finally {
-      btn.disabled = false;
-      loadingMsg.style.display = "none";
-    }
-  });
+    },
