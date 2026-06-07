@@ -1,0 +1,9 @@
+name = "kensan-instagram"
+main = "src/index.js"
+compatibility_date = "2026-06-07"
+compatibility_flags = [ "nodejs_compat" ]
+
+# public フォルダの中身（index.html）を画面として公開する設定
+[assets]
+directory = "./public"
+binding = "ASSETS"
