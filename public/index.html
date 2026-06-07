@@ -5,9 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Instagramアシスタント</title>
   <style>
-    /* ＝＝＝ デザイン（CSS） ＝＝＝ */
     :root {
-      var(--ig-gradient): linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      --ig-gradient: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
       --bg-color: #f9fafb;
       --box-bg: #ffffff;
       --text-main: #333333;
@@ -32,7 +31,7 @@
     h1 {
       text-align: center;
       font-size: 1.5rem;
-      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      background: var(--ig-gradient);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       margin-top: 0;
@@ -79,7 +78,7 @@
       transition: 0.2s;
     }
     .btn-persona.active {
-      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      background: var(--ig-gradient);
       color: white;
       border: none;
       font-weight: bold;
@@ -101,7 +100,7 @@
       padding: 16px;
       border: none;
       border-radius: 30px;
-      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      background: var(--ig-gradient);
       color: white;
       font-size: 1.2rem;
       font-weight: bold;
@@ -137,7 +136,7 @@
       display: block;
       width: 100%;
       padding: 14px;
-      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      background: var(--ig-gradient);
       color: #fff;
       border: none;
       border-radius: 8px;
@@ -239,4 +238,104 @@
     window.location.href = appUrl;
     setTimeout(function() {
       window.open(webUrl, "_blank");
-    },
+    }, 500);
+  }
+
+  // Instagramボタンのクリックイベント設定
+  document.getElementById('instaBtn').addEventListener('click', function(e) {
+    e.preventDefault();
+    openInstagramApp();
+  });
+
+  // 4. 生成処理
+  document.getElementById('generateBtn').addEventListener('click', async function() {
+    if (!base64Image) {
+      alert("まずは料理の写真を選んでください！");
+      return;
+    }
+
+    const checkedLangs = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+    if (checkedLangs.length === 0) {
+      alert("少なくとも1つの言語を選んでください！");
+      return;
+    }
+
+    const btn = document.getElementById('generateBtn');
+    const loadingMsg = document.getElementById('loadingMsg');
+    const resultArea = document.getElementById('resultArea');
+    
+    btn.disabled = true;
+    loadingMsg.style.display = "block";
+    resultArea.style.display = "none";
+
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: base64Image,
+          languages: checkedLangs,
+          persona: selectedPersona
+        })
+      });
+
+      if (!response.ok) {
+        const errorDetail = await response.text();
+        throw new Error(`サーバー通信エラー: ${errorDetail}`);
+      }
+
+      const responseText = await response.text();
+      
+      // AIが余計な言葉を混ぜても、データ部分 { } だけを強制的に抜き出す
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error("AIが正しいデータを作成できませんでした。");
+      }
+      
+      const cleanJsonStr = jsonMatch[0];
+      const data = JSON.parse(cleanJsonStr);
+
+      const resultsContainer = document.getElementById('resultsContainer');
+      resultsContainer.innerHTML = ""; 
+
+      for (const [lang, text] of Object.entries(data)) {
+        const box = document.createElement('div');
+        box.className = 'result-box';
+        
+        const langTitle = document.createElement('div');
+        langTitle.className = 'result-lang';
+        langTitle.textContent = lang;
+        
+        const textArea = document.createElement('div');
+        textArea.className = 'result-text';
+        textArea.textContent = text;
+        
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'btn-copy';
+        copyBtn.textContent = '📋 この文章をコピーする';
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(text).then(() => {
+            alert(`【${lang}】の文章をコピーしました！`);
+          });
+        };
+
+        box.appendChild(langTitle);
+        box.appendChild(textArea);
+        box.appendChild(copyBtn);
+        resultsContainer.appendChild(box);
+      }
+
+      resultArea.style.display = "block";
+
+    } catch (error) {
+      console.error(error);
+      alert(`エラーが発生しました。\n詳細: ${error.message}`);
+    } finally {
+      btn.disabled = false;
+      loadingMsg.style.display = "none";
+    }
+  });
+</script>
+
+</body>
+</html>
