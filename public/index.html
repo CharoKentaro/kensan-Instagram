@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Instagramアシスタント</title>
   <style>
-    /* ＝＝＝ デザイン（CSS） ＝＝＝ */
     body {
       font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
       background-color: #f9fafb;
@@ -25,7 +24,6 @@
     h1 {
       text-align: center;
       font-size: 1.5rem;
-      /* Instagramカラーのグラデーション */
       background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -41,7 +39,6 @@
       margin-bottom: 12px;
       font-size: 1.1rem;
     }
-    /* 画像アップロード部分のデザイン */
     .image-upload-area {
       border: 2px dashed #bc1888;
       border-radius: 12px;
@@ -63,7 +60,6 @@
       margin-top: 12px;
       display: none;
     }
-    /* ペルソナボタン */
     .persona-btns {
       display: flex;
       gap: 10px;
@@ -84,7 +80,6 @@
       border: none;
       font-weight: bold;
     }
-    /* 言語チェックボックス */
     .lang-checkboxes {
       display: flex;
       gap: 15px;
@@ -97,7 +92,6 @@
       font-size: 1rem;
       cursor: pointer;
     }
-    /* 生成ボタン */
     .btn-generate {
       width: 100%;
       padding: 16px;
@@ -121,7 +115,6 @@
       transform: none; 
     }
     
-    /* 結果表示エリア */
     #resultArea { 
       display: none; 
       margin-top: 24px; 
@@ -152,7 +145,6 @@
       cursor: pointer;
       margin-top: 8px;
     }
-    /* Instagramアプリ起動ボタン */
     .btn-instagram {
       display: block;
       width: 100%;
@@ -222,7 +214,7 @@
     <div class="step-title">🎉 完成しました！</div>
     <div id="resultsContainer"></div>
     
-    <!-- Instagramアプリへ直接繋がる導線（非表示エリアの中にあり、生成後に表示されます） -->
+    <!-- Instagramアプリへ直接繋がる導線 -->
     <a href="#" class="btn-instagram" id="instaBtn">
       🚀 コピーした文章を持ってInstagramを開く
     </a>
@@ -230,7 +222,6 @@
 </div>
 
 <script>
-  // 画面の準備が完全に整ってからプログラムを安全に起動する（デグレ・エラー防止）
   window.addEventListener('DOMContentLoaded', () => {
     let base64Image = "";
     let selectedPersona = "高級感と威厳のある老舗の寿司店・和食店。新鮮なネタの魅力や美しさを伝える、丁寧で品格のある口調。"; 
@@ -245,12 +236,11 @@
     const instaBtn = document.getElementById('instaBtn');
     const personaBtns = document.querySelectorAll('.btn-persona');
 
-    // 1. 【改善】画像選択エリアをタップした時の処理（スマホでも100%確実に動くように修正）
+    // 1. 画像選択
     uploadArea.addEventListener('click', () => {
       imageInput.click();
     });
 
-    // 画像が選ばれた時の処理
     imageInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -264,7 +254,7 @@
       reader.readAsDataURL(file);
     });
 
-    // 2. ペルソナボタンの切り替え処理
+    // 2. ペルソナボタン
     personaBtns.forEach(btn => {
       btn.addEventListener('click', function() {
         personaBtns.forEach(b => b.classList.remove('active'));
@@ -273,27 +263,22 @@
       });
     });
 
-    // 3. Instagramアプリを起動する関数
+    // 3. Instagram起動
     function openInstagramApp() {
       const appUrl = "instagram://app";
       const webUrl = "https://www.instagram.com/";
-      
-      // まずアプリの起動を試みる
       window.location.href = appUrl;
-      
-      // アプリが起動しなかった場合（0.5秒後）、ブラウザ版を開く
       setTimeout(() => {
         window.open(webUrl, "_blank");
       }, 500);
     }
 
-    // Instagram起動ボタンのイベント紐付け
     instaBtn.addEventListener('click', (e) => {
       e.preventDefault();
       openInstagramApp();
     });
 
-    // 4. 文章生成処理
+    // 4. 生成処理
     generateBtn.addEventListener('click', async () => {
       if (!base64Image) {
         alert("まずは料理の写真を選んでください！");
@@ -328,7 +313,6 @@
 
         const responseText = await response.text();
         
-        // AIが余計な文字を返してもJSON部分だけを安全に抜き出す
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
           throw new Error("AIが正しい形式のデータを作成できませんでした。");
@@ -366,7 +350,6 @@
           resultsContainer.appendChild(box);
         }
 
-        // すべての生成と配置が完了してから結果エリアを表示
         resultArea.style.display = "block";
 
       } catch (error) {
