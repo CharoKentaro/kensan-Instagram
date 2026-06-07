@@ -1,10 +1,9 @@
-// 心臓部: Gemini 2.5 Flash APIを呼び出すワーカープログラム
+// src/index.js
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // 画面（フロントエンド）から「/api/generate」宛てにリクエストが来たら、Geminiの処理を実行する
     if (url.pathname === "/api/generate" && request.method === "POST") {
       const GEMINI_API_KEY = env.GEMINI_API_KEY;
 
@@ -18,14 +17,23 @@ export default {
 
         const currentMonth = new Date().getMonth() + 1;
 
+        // 【画像認識を極限まで強化したシステムプロンプト】
         const systemPrompt = `
-          あなたはプロのSNSマーケターであり、${persona}です。
-          現在 ${currentMonth}月 です。季節感を取り入れつつ、料理写真の魅力を伝えるInstagramキャプションを作成してください。
+          あなたは世界トップクラスの飲食・SNSマーケターであり、${persona}です。
+          現在 ${currentMonth}月 です。この季節感や旬の要素を自然に取り入れてください。
+
+          【超重要：写真分析の指示】
+          提供された料理写真を、プロの料理人の目で超詳細に分析してください：
+          1. メイン食材は何か？（例：マグロ、ウナギ、カフェラテなど）
+          2. 調理法や状態はどう見えるか？（例：炭火の焦げ目、タレの照りやツヤ、身のふっくら感、湯気、新鮮な脂の乗りなど）
+          3. 盛り付けや器、背景の雰囲気はどうなっているか？
           
+          上記で分析した「写真に写っている視覚的特徴（特に照り、ふっくら感、焼き色などの美味しそうな部分）」を【必ず】キャプションの文章内に「まるで写真から香りが漂うかのように」具体的に描写してください。見たままの特徴を文章に入れることで、写真とキャプションの説得力を最大化します。
+
           【必須条件】
           ・出力言語: ${languages.join(", ")}
-          ・インバウンド向けに魅力的なマーケティング意訳を行ってください。
-          ・必ず指定のJSON形式（キーが言語名、値がテキスト）で出力してください。
+          ・インバウンド（外国人観光客）向けに魅力的なマーケティング意訳を行ってください。日本の食文化へのリスペクトを含めるとなお良いです。
+          ・必ず指定のJSON形式（キーが言語名、値がテキスト）で出力してください。ハッシュタグも各言語で5〜8個末尾に含めてください。
         `;
 
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
@@ -34,7 +42,7 @@ export default {
           system_instruction: { parts: { text: systemPrompt } },
           contents: [{
             parts: [
-              { text: "この料理写真を分析してください。" },
+              { text: "この料理写真をプロの視点で分析し、シズル感（美味しさ）あふれるInstagram投稿文を作成してください。" },
               { inline_data: { mime_type: "image/jpeg", data: imageBase64 } }
             ]
           }],
@@ -67,8 +75,6 @@ export default {
       }
     }
 
-    // 「/api/generate」以外へのアクセス（通常のホームページ表示）は、
-    // wrangler.tomlで設定した [assets] (public/index.html) に任せるため、そのまま通します。
     return env.ASSETS.fetch(request);
   }
 };
