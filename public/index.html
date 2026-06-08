@@ -155,7 +155,7 @@
       border-radius: 8px;
       font-weight: bold;
       cursor: pointer;
-      margin-top: 12px;
+      margin-top: 24px;
       text-align: center;
       text-decoration: none;
       box-sizing: border-box;
@@ -194,14 +194,14 @@
     </div>
   </div>
 
-  <!-- Step 3: 言語 -->
+  <!-- Step 3: 言語（ラジオボタンに変更） -->
   <div class="step">
     <div class="step-title">③ 作成する言語をえらぶ</div>
     <div class="lang-checkboxes">
-      <label class="lang-label"><input type="checkbox" value="日本語" checked> 🇯🇵 日本語</label>
-      <label class="lang-label"><input type="checkbox" value="English"> 🇬🇧 英語</label>
-      <label class="lang-label"><input type="checkbox" value="中文"> 🇨🇳 中国語</label>
-      <label class="lang-label"><input type="checkbox" value="한국어"> 🇰🇷 韓国語</label>
+      <label class="lang-label"><input type="radio" name="language" value="日本語" checked> 🇯🇵 日本語</label>
+      <label class="lang-label"><input type="radio" name="language" value="English"> 🇬🇧 英語</label>
+      <label class="lang-label"><input type="radio" name="language" value="中文"> 🇨🇳 中国語</label>
+      <label class="lang-label"><input type="radio" name="language" value="한국어"> 🇰🇷 韓国語</label>
     </div>
   </div>
 
@@ -213,12 +213,13 @@
   <div id="resultArea">
     <div class="step-title">🎉 完成しました！</div>
     <div id="resultsContainer"></div>
-    
-    <!-- 【修正】安全な直リンクにアップグレード -->
-    <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="btn-instagram" id="instaBtn">
-      🚀 コピーした文章を持ってInstagramを開く
-    </a>
   </div>
+
+  <!-- 【改善】Instagramアプリを開くボタンを結果エリアの外（常時表示）に移動 -->
+  <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="btn-instagram" id="instaBtn">
+    🚀 コピーした文章を持ってInstagramを開く
+  </a>
+
 </div>
 
 <script>
@@ -269,11 +270,13 @@
         return;
       }
 
-      const checkedLangs = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
-      if (checkedLangs.length === 0) {
-        alert("少なくとも1つの言語を選んでください！");
+      // 【改善】ラジオボタンから1つだけ言語を取得するように変更
+      const selectedLang = document.querySelector('input[name="language"]:checked');
+      if (!selectedLang) {
+        alert("作成する言語を選んでください！");
         return;
       }
+      const checkedLangs = [selectedLang.value];
 
       generateBtn.disabled = true;
       loadingMsg.style.display = "block";
