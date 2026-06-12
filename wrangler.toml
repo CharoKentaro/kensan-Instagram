@@ -6,7 +6,11 @@ compatibility_flags = [ "nodejs_compat" ]
 [observability]
 enabled = true
 
-# public フォルダの中身（index.html）を画面として公開する設定
 [assets]
 directory = "./public"
 binding = "ASSETS"
+
+# 追加：画像を一時保存するR2バケットの設定
+[[r2_buckets]]
+binding = "IMAGE_BUCKET"
+bucket_name = "kensan-images"
