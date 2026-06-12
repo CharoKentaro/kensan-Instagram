@@ -130,8 +130,6 @@
       margin-bottom: 8px; 
       color: #bc1888; 
     }
-
-    /* 【追加】編集用のテキストエリアと確定ボタンのデザイン */
     .result-text-edit {
       width: 100%;
       min-height: 120px;
@@ -162,7 +160,6 @@
       display: none;
       text-align: center;
     }
-
     .btn-copy {
       width: 100%;
       padding: 12px;
@@ -174,8 +171,6 @@
       cursor: pointer;
       margin-top: 8px;
     }
-
-    /* Instagram起動ボタン */
     .btn-instagram {
       display: block;
       width: 100%;
@@ -205,7 +200,6 @@
 <div class="container">
   <h1>🍣 Instagram投稿アシスタント</h1>
 
-  <!-- Step 1: 画像 -->
   <div class="step">
     <div class="step-title">① 料理の写真をえらぶ</div>
     <div class="image-upload-area" id="uploadArea">
@@ -215,7 +209,6 @@
     <img id="previewImage" alt="プレビュー">
   </div>
 
-  <!-- Step 2: お店のスタイル -->
   <div class="step">
     <div class="step-title">② お店のスタイルをえらぶ</div>
     <div class="persona-btns" id="personaContainer">
@@ -225,7 +218,6 @@
     </div>
   </div>
 
-  <!-- Step 3: 言語（ラジオボタン） -->
   <div class="step">
     <div class="step-title">③ 作成する言語をえらぶ</div>
     <div class="lang-checkboxes">
@@ -236,17 +228,14 @@
     </div>
   </div>
 
-  <!-- Step 4: 生成ボタン -->
   <button class="btn-generate" id="generateBtn">✨ AIで文章を作成する！</button>
   <div id="loadingMsg">AIが一生懸命写真を分析して、文章を考えています...⏳</div>
 
-  <!-- 結果表示エリア -->
   <div id="resultArea">
     <div class="step-title">🎉 完成しました！</div>
     <div id="resultsContainer"></div>
   </div>
 
-  <!-- 【改善】複雑なJSを捨て、純粋なリンクにしてバグを完全防止 -->
   <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="btn-instagram" id="instaBtn">
     🚀 コピーした文章を持ってInstagramを開く
   </a>
@@ -267,7 +256,6 @@
     const resultsContainer = document.getElementById('resultsContainer');
     const personaBtns = document.querySelectorAll('.btn-persona');
 
-    // 1. 画像選択
     uploadArea.addEventListener('click', () => {
       imageInput.click();
     });
@@ -285,7 +273,6 @@
       reader.readAsDataURL(file);
     });
 
-    // 2. ペルソナボタン
     personaBtns.forEach(btn => {
       btn.addEventListener('click', function() {
         personaBtns.forEach(b => b.classList.remove('active'));
@@ -294,9 +281,6 @@
       });
     });
 
-    // ※JSでの openInstagramApp() などはバグの原因になるため完全に削除しました。
-
-    // 3. 生成処理
     generateBtn.addEventListener('click', async () => {
       if (!base64Image) {
         alert("まずは料理の写真を選んでください！");
@@ -325,24 +309,27 @@
           })
         });
 
+        // 【改善】サーバーが返すJSONエラーを正しく読む
         if (!response.ok) {
-          const errorDetail = await response.text();
+          let errorDetail = "不明なエラー";
+          try {
+            const errJson = await response.json();
+            errorDetail = errJson.error || JSON.stringify(errJson);
+          } catch {
+            errorDetail = await response.text().catch(() => "不明なエラー");
+          }
           throw new Error(`サーバー通信エラー: ${errorDetail}`);
         }
 
-        const responseText = await response.text();
-        
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
+        // 【改善】バックエンドが返すクリーンなJSONをシンプルに受け取る
+        const data = await response.json();
+
+        if (!data || typeof data !== 'object' || Object.keys(data).length === 0) {
           throw new Error("AIが正しい形式のデータを作成できませんでした。");
         }
-        
-        const cleanJsonStr = jsonMatch[0];
-        const data = JSON.parse(cleanJsonStr);
 
         resultsContainer.innerHTML = ""; 
 
-        // 【改善】編集・確認・コピーの流れを完全に統合
         for (const [lang, text] of Object.entries(data)) {
           const box = document.createElement('div');
           box.className = 'result-box';
@@ -351,28 +338,23 @@
           langTitle.className = 'result-lang';
           langTitle.textContent = lang;
 
-          // テキストエリア（自由に編集可能）
           const editArea = document.createElement('textarea');
           editArea.className = 'result-text-edit';
           editArea.value = text;
 
-          // 編集完了ボタン
           const confirmBtn = document.createElement('button');
           confirmBtn.className = 'btn-confirm';
           confirmBtn.textContent = '✅ 編集完了・この文章を確定する';
 
-          // 確定済みバッジ
           const badge = document.createElement('div');
           badge.className = 'confirmed-badge';
           badge.textContent = '✔ 確定済み';
 
-          // コピーボタン（最初は非表示）
           const copyBtn = document.createElement('button');
           copyBtn.className = 'btn-copy';
           copyBtn.textContent = '📋 この文章をコピーする';
           copyBtn.style.display = 'none';
 
-          // 確定ボタンを押した時の動作
           confirmBtn.onclick = () => {
             editArea.readOnly = true;
             editArea.style.background = '#f0fdf4';
@@ -381,7 +363,6 @@
             copyBtn.style.display = 'block';
           };
 
-          // コピーボタンを押した時の動作
           copyBtn.onclick = () => {
             navigator.clipboard.writeText(editArea.value).then(() => {
               alert(`【${lang}】の文章をコピーしました！`);
