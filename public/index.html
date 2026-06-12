@@ -130,10 +130,39 @@
       margin-bottom: 8px; 
       color: #bc1888; 
     }
-    .result-text { 
-      white-space: pre-wrap; 
-      font-size: 0.95rem; 
+
+    /* 【追加】編集用のテキストエリアと確定ボタンのデザイン */
+    .result-text-edit {
+      width: 100%;
+      min-height: 120px;
+      font-size: 0.95rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 8px;
+      box-sizing: border-box;
+      white-space: pre-wrap;
+      resize: vertical;
+      font-family: inherit;
     }
+    .btn-confirm {
+      width: 100%;
+      padding: 12px;
+      background: #16a34a;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .confirmed-badge {
+      color: #16a34a;
+      font-weight: bold;
+      margin-top: 6px;
+      display: none;
+      text-align: center;
+    }
+
     .btn-copy {
       width: 100%;
       padding: 12px;
@@ -145,6 +174,8 @@
       cursor: pointer;
       margin-top: 8px;
     }
+
+    /* Instagram起動ボタン */
     .btn-instagram {
       display: block;
       width: 100%;
@@ -194,7 +225,7 @@
     </div>
   </div>
 
-  <!-- Step 3: 言語（ラジオボタンに変更） -->
+  <!-- Step 3: 言語（ラジオボタン） -->
   <div class="step">
     <div class="step-title">③ 作成する言語をえらぶ</div>
     <div class="lang-checkboxes">
@@ -215,7 +246,7 @@
     <div id="resultsContainer"></div>
   </div>
 
-  <!-- 【改善】Instagramアプリを開くボタンを結果エリアの外（常時表示）に移動 -->
+  <!-- 【改善】複雑なJSを捨て、純粋なリンクにしてバグを完全防止 -->
   <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="btn-instagram" id="instaBtn">
     🚀 コピーした文章を持ってInstagramを開く
   </a>
@@ -263,6 +294,8 @@
       });
     });
 
+    // ※JSでの openInstagramApp() などはバグの原因になるため完全に削除しました。
+
     // 3. 生成処理
     generateBtn.addEventListener('click', async () => {
       if (!base64Image) {
@@ -270,7 +303,6 @@
         return;
       }
 
-      // 【改善】ラジオボタンから1つだけ言語を取得するように変更
       const selectedLang = document.querySelector('input[name="language"]:checked');
       if (!selectedLang) {
         alert("作成する言語を選んでください！");
@@ -310,29 +342,56 @@
 
         resultsContainer.innerHTML = ""; 
 
+        // 【改善】編集・確認・コピーの流れを完全に統合
         for (const [lang, text] of Object.entries(data)) {
           const box = document.createElement('div');
           box.className = 'result-box';
-          
+
           const langTitle = document.createElement('div');
           langTitle.className = 'result-lang';
           langTitle.textContent = lang;
-          
-          const textArea = document.createElement('div');
-          textArea.className = 'result-text';
-          textArea.textContent = text;
-          
+
+          // テキストエリア（自由に編集可能）
+          const editArea = document.createElement('textarea');
+          editArea.className = 'result-text-edit';
+          editArea.value = text;
+
+          // 編集完了ボタン
+          const confirmBtn = document.createElement('button');
+          confirmBtn.className = 'btn-confirm';
+          confirmBtn.textContent = '✅ 編集完了・この文章を確定する';
+
+          // 確定済みバッジ
+          const badge = document.createElement('div');
+          badge.className = 'confirmed-badge';
+          badge.textContent = '✔ 確定済み';
+
+          // コピーボタン（最初は非表示）
           const copyBtn = document.createElement('button');
           copyBtn.className = 'btn-copy';
           copyBtn.textContent = '📋 この文章をコピーする';
+          copyBtn.style.display = 'none';
+
+          // 確定ボタンを押した時の動作
+          confirmBtn.onclick = () => {
+            editArea.readOnly = true;
+            editArea.style.background = '#f0fdf4';
+            confirmBtn.style.display = 'none';
+            badge.style.display = 'block';
+            copyBtn.style.display = 'block';
+          };
+
+          // コピーボタンを押した時の動作
           copyBtn.onclick = () => {
-            navigator.clipboard.writeText(text).then(() => {
+            navigator.clipboard.writeText(editArea.value).then(() => {
               alert(`【${lang}】の文章をコピーしました！`);
             });
           };
 
           box.appendChild(langTitle);
-          box.appendChild(textArea);
+          box.appendChild(editArea);
+          box.appendChild(confirmBtn);
+          box.appendChild(badge);
           box.appendChild(copyBtn);
           resultsContainer.appendChild(box);
         }
