@@ -1,0 +1,30 @@
+name: Deploy to Cloudflare Workers
+
+# mainブランチにコードが保存(Push)されたら自動で動かす設定
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          # ここでGitHubの金庫からCloudflareに鍵をパス（注入）します
+          secrets: |
+            GEMINI_API_KEY
+            INSTAGRAM_ACCESS_TOKEN
+            IG_USER_ID
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
