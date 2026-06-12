@@ -171,8 +171,6 @@
       cursor: pointer;
       margin-top: 8px;
     }
-
-    /* 【追加】自動投稿ボタンのデザイン */
     .btn-post-instagram {
       width: 100%;
       padding: 14px;
@@ -189,8 +187,6 @@
       background: #cccccc;
       cursor: not-allowed;
     }
-
-    /* 手動投稿用のブラウザ起動ボタン（予備として残します） */
     .btn-instagram-link {
       display: block;
       width: 100%;
@@ -256,7 +252,6 @@
     <div id="resultsContainer"></div>
   </div>
 
-  <!-- 万が一エラーになった時のための手動投稿リンク（予備） -->
   <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="btn-instagram-link" id="instaBtn">
     （予備）Instagramのサイトを開く
   </a>
@@ -266,6 +261,7 @@
 <script>
   window.addEventListener('DOMContentLoaded', () => {
     let base64Image = "";
+    let imageMimeType = "image/jpeg"; // 【改善】PNG画像に動的対応するための変数
     let selectedPersona = "高級感と威厳のある老舗の寿司店・和食店。新鮮なネタの魅力や美しさを伝える、丁寧で品格のある口調。"; 
 
     const uploadArea = document.getElementById('uploadArea');
@@ -285,11 +281,13 @@
       const file = e.target.files[0];
       if (!file) return;
 
+      // 【改善】アップされた写真のMIMEタイプ（png / jpeg）を自動保存
+      imageMimeType = file.type || "image/jpeg";
+
       const reader = new FileReader();
       reader.onload = function(event) {
         previewImage.src = event.target.result;
         previewImage.style.display = 'block';
-        // Base64からヘッダ（data:image/jpeg;base64,）を消して純粋なデータだけにする
         base64Image = event.target.result.split(',')[1];
       };
       reader.readAsDataURL(file);
@@ -375,20 +373,18 @@
           copyBtn.textContent = '📋 この文章をコピーする';
           copyBtn.style.display = 'none';
 
-          // 【追加】自動投稿ボタン
           const postBtn = document.createElement('button');
           postBtn.className = 'btn-post-instagram';
           postBtn.textContent = '📸 この文章と画像でInstagramに投稿する！';
           postBtn.style.display = 'none';
 
-          // 編集完了（確定）ボタンを押したときの処理
           confirmBtn.onclick = () => {
             editArea.readOnly = true;
             editArea.style.background = '#f0fdf4';
             confirmBtn.style.display = 'none';
             badge.style.display = 'block';
             copyBtn.style.display = 'block';
-            postBtn.style.display = 'block'; // 自動投稿ボタンが出現！
+            postBtn.style.display = 'block'; 
           };
 
           copyBtn.onclick = () => {
@@ -397,7 +393,6 @@
             });
           };
 
-          // 【追加】Instagram自動投稿ボタンを押したときの処理
           postBtn.onclick = async () => {
             if (!base64Image) {
               alert("画像が見つかりません。ページを再読み込みしてやり直してください。");
@@ -412,13 +407,26 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   imageBase64: base64Image,
-                  caption: editArea.value
+                  caption: editArea.value,
+                  mimeType: imageMimeType // 【改善】MIMEタイプを一緒に送る
                 })
               });
 
+              // エラー内容をJSONから正確に抽出
+              if (!res.ok) {
+                let errorDetail = "不明なエラー";
+                try {
+                  const errJson = await res.json();
+                  errorDetail = errJson.error || JSON.stringify(errJson);
+                } catch {
+                  errorDetail = await res.text().catch(() => "不明なエラー");
+                }
+                throw new Error(errorDetail);
+              }
+
               const result = await res.json();
 
-              if (!res.ok || !result.success) {
+              if (!result.success) {
                 throw new Error(result.error || "投稿に失敗しました。");
               }
 
