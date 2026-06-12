@@ -1,10 +1,11 @@
 // src/index.js
 
 export default {
+  // ===== 1. 通常のWebアクセスやAPIリクエストの処理 =====
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // ===== 既存機能：AI文章生成（一切変更なし・デグレ防止） =====
+    // AI文章生成（一切変更なし・デグレ防止）
     if (url.pathname === "/api/generate" && request.method === "POST") {
       const GEMINI_API_KEY = env.GEMINI_API_KEY;
 
@@ -104,11 +105,11 @@ export default {
       }
     }
 
-    // ===== 新規機能：Instagram自動投稿（v2.0） =====
+    // Instagram自動投稿（MIMEタイプに完全対応！）
     if (url.pathname === "/api/post" && request.method === "POST") {
       try {
         const body = await request.json();
-        const { imageBase64, caption } = body;
+        const { imageBase64, caption, mimeType } = body; // フロントからMIMEタイプ（PNGかJPEGか）を受け取る
 
         if (!imageBase64 || !caption) {
           return new Response(JSON.stringify({ error: "画像または文章がありません。" }), {
@@ -117,23 +118,30 @@ export default {
           });
         }
 
-        // Step1: base64画像をバイナリに変換
+        const imageMime = mimeType || "image/jpeg"; // 指定がなければデフォルトはJPEG
+        const extension = imageMime.split("/")[1] || "jpg";
+
+        // Step1: base64をバイナリに変換
         const imageBytes = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
 
-        // Step2: Cloudflare R2に一時保存（ファイル名は日時でユニークにする）
-        const fileName = `post-${Date.now()}.jpg`;
+        // Step2: R2に一時保存（拡張子を動的に合わせる）
+        const fileName = `post-${Date.now()}.${extension}`;
         await env.IMAGE_BUCKET.put(fileName, imageBytes, {
-          httpMetadata: { contentType: "image/jpeg" }
+          httpMetadata: { contentType: imageMime }
         });
 
-        // Step3: R2のパブリックURLを組み立てる
+        // Step3: R2のパブリックURLを組み立て
         const imageUrl = `https://${env.R2_PUBLIC_DOMAIN}/${fileName}`;
 
-        // Step4: Instagramにコンテナを作成（画像URLと文章を送る）
+        // Step4: 金庫（KV）からInstagram長期アクセストークンを自動読み込み！
+        const accessToken = await env.TOKEN_STORE.get("INSTAGRAM_ACCESS_TOKEN");
+        if (!accessToken) {
+          throw new Error("データベース(KV)内にInstagramアクセストークンが見つかりません。");
+        }
+        
         const igUserId = env.IG_USER_ID;
-        const accessToken = env.INSTAGRAM_ACCESS_TOKEN;
 
-        // Meta Graph API (v25.0 で統一)
+        // Meta Graph APIでコンテナ作成
         const containerRes = await fetch(
           `https://graph.facebook.com/v25.0/${igUserId}/media`,
           {
@@ -159,7 +167,7 @@ export default {
           throw new Error("InstagramのコンテナIDを取得できませんでした。");
         }
 
-        // Step5: コンテナを公開（実際にInstagramに投稿する）
+        // Step5: 実際にInstagramに投稿する
         const publishRes = await fetch(
           `https://graph.facebook.com/v25.0/${igUserId}/media_publish`,
           {
@@ -179,7 +187,7 @@ export default {
 
         const publishData = await publishRes.json();
 
-        // Step6: 投稿成功後、R2から画像を自動削除（容量オーバー防止のお掃除機能）
+        // Step6: 投稿成功後、R2の画像を削除して自動お掃除
         ctx.waitUntil(env.IMAGE_BUCKET.delete(fileName));
 
         return new Response(JSON.stringify({ success: true, postId: publishData.id }), {
@@ -195,5 +203,36 @@ export default {
     }
 
     return env.ASSETS.fetch(request);
+  },
+
+  // ===== 2. 【新規追加】タイマー（Cron）が起動した時の自動更新処理 =====
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil((async () => {
+      try {
+        // 金庫（KV）から、現在の古い長期トークンを読み込む
+        const currentToken = await env.TOKEN_STORE.get("INSTAGRAM_ACCESS_TOKEN");
+        if (!currentToken) return;
+
+        // MetaのAPIを叩いて、有効期限をさらに60日延長（リフレッシュ）する
+        const url = `https://graph.facebook.com/v25.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${env.CF_API_TOKEN}&client_secret=${env.INSTAGRAM_APP_SECRET}&fb_exchange_token=${currentToken}`;
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.error("トークン自動更新エラー:", await response.text());
+          return;
+        }
+
+        const data = await response.json();
+        const newToken = data.access_token;
+
+        if (newToken) {
+          // 新しいトークンを金庫（KV）に上書き保存！
+          await env.TOKEN_STORE.put("INSTAGRAM_ACCESS_TOKEN", newToken);
+          console.log("Instagramアクセストークンを自動更新しました！");
+        }
+      } catch (err) {
+        console.error("Cron自動更新システムでエラーが発生しました:", err);
+      }
+    })());
   }
 };
