@@ -18,7 +18,7 @@ export default {
 
         const currentMonth = new Date().getMonth() + 1;
 
-        // 【改善】写真分析の指示を極限まで強化し、OCRや質感の読み取りを追加
+        // 【改善】単一言語の強制と、超詳細な写真分析指示
         const systemPrompt = `
           あなたは世界トップクラスの飲食・SNSマーケターであり、${persona}です。
           現在 ${currentMonth}月 です。この季節感や旬の要素を自然に取り入れてください。
@@ -33,8 +33,9 @@ export default {
           上記で分析した結果を必ずキャプション文に反映させ、見たままのシズル感を最大限に表現してください。
 
           【必須条件】
-          ・出力言語: ${languages.join(", ")}
-          ・外国語はインバウンド向けにマーケティング意訳してください。
+          ・出力言語: ${languages.join(", ")} のみ。それ以外の言語は絶対に出力しないでください。
+          ・指定された言語が日本語のみの場合、英語・中国語・韓国語は一切出力禁止です。
+          ・外国語が指定された場合はインバウンド向けにマーケティング意訳してください。
           ・各言語の末尾にハッシュタグを5〜8個つけてください。
 
           【超重要：出力形式に関する厳格なルール】
@@ -66,9 +67,38 @@ export default {
           throw new Error(`Gemini API Error: ${response.status} - ${err}`);
         }
 
+        // 【改善】ご提示いただいた4つの厳密なエラーチェックを完全実装
         const result = await response.json();
+
+        // 厳密チェック①：candidatesが存在するか
+        if (!result.candidates || result.candidates.length === 0) {
+          throw new Error("Geminiからの返答にcandidatesがありませんでした。");
+        }
+
+        // 厳密チェック②：finishReasonが正常か（安全フィルター等での停止を検知）
+        const finishReason = result.candidates[0].finishReason;
+        if (finishReason && finishReason !== "STOP") {
+          throw new Error(`Geminiが正常に応答できませんでした。理由: ${finishReason}`);
+        }
+
+        // 厳密チェック③：contentとpartsが存在するか
+        if (!result.candidates[0].content || !result.candidates[0].content.parts?.[0]?.text) {
+          throw new Error("Geminiの返答形式が予期せぬものでした。");
+        }
+
         const generatedText = result.candidates[0].content.parts[0].text;
 
+        // 厳密チェック④：JSONとしてパースできるか
+        let parsedCheck;
+        try {
+          const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+          if (!jsonMatch) throw new Error("JSON形式が見つかりません。");
+          parsedCheck = JSON.parse(jsonMatch[0]);
+        } catch {
+          throw new Error("AIが正しいJSON形式で返答しませんでした。もう一度お試しください。");
+        }
+
+        // エラーチェックを全て通過したので、安全に返す
         return new Response(generatedText, {
           headers: { "Content-Type": "application/json" }
         });
