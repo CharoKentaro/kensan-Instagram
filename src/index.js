@@ -18,7 +18,6 @@ export default {
 
         const currentMonth = new Date().getMonth() + 1;
 
-        // 【改善】単一言語の強制と、超詳細な写真分析指示
         const systemPrompt = `
           あなたは世界トップクラスの飲食・SNSマーケターであり、${persona}です。
           現在 ${currentMonth}月 です。この季節感や旬の要素を自然に取り入れてください。
@@ -67,28 +66,23 @@ export default {
           throw new Error(`Gemini API Error: ${response.status} - ${err}`);
         }
 
-        // 【改善】ご提示いただいた4つの厳密なエラーチェックを完全実装
         const result = await response.json();
 
-        // 厳密チェック①：candidatesが存在するか
         if (!result.candidates || result.candidates.length === 0) {
           throw new Error("Geminiからの返答にcandidatesがありませんでした。");
         }
 
-        // 厳密チェック②：finishReasonが正常か（安全フィルター等での停止を検知）
         const finishReason = result.candidates[0].finishReason;
         if (finishReason && finishReason !== "STOP") {
           throw new Error(`Geminiが正常に応答できませんでした。理由: ${finishReason}`);
         }
 
-        // 厳密チェック③：contentとpartsが存在するか
         if (!result.candidates[0].content || !result.candidates[0].content.parts?.[0]?.text) {
           throw new Error("Geminiの返答形式が予期せぬものでした。");
         }
 
         const generatedText = result.candidates[0].content.parts[0].text;
 
-        // 厳密チェック④：JSONとしてパースできるか
         let parsedCheck;
         try {
           const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
@@ -98,8 +92,8 @@ export default {
           throw new Error("AIが正しいJSON形式で返答しませんでした。もう一度お試しください。");
         }
 
-        // エラーチェックを全て通過したので、安全に返す
-        return new Response(generatedText, {
+        // 【改善】二重パースを防ぐため、チェックを通過したクリーンなJSONのみを返す
+        return new Response(JSON.stringify(parsedCheck), {
           headers: { "Content-Type": "application/json" }
         });
 
