@@ -10,7 +10,21 @@ enabled = true
 directory = "./public"
 binding = "ASSETS"
 
+# 追加：R2の公開用URLの設定（教えていただいたURLをバインドします）
+[vars]
+R2_PUBLIC_DOMAIN = "pub-e469689a720444c5a0e657396c915c28.r2.dev"
+
 # 追加：画像を一時保存するR2バケットの設定
 [[r2_buckets]]
 binding = "IMAGE_BUCKET"
 bucket_name = "kensan-images"
+
+# 追加：鍵の自動更新に使うデータ保管庫（KV）
+# ※作成したKVの実際のIDを、下部の「id」に貼り付けてください
+[[kv_namespaces]]
+binding = "TOKEN_STORE"
+id = "ここに作成したTOKEN_STOREのIDを貼り付けてください"
+
+# 追加：トークンを毎月1日に自動更新するための定期タイマー（Cron Trigger）
+[triggers]
+crons = [ "0 0 1 * *" ] # 毎月1日の午前0時に自動起動
