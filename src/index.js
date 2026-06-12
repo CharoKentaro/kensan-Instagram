@@ -105,11 +105,11 @@ export default {
       }
     }
 
-    // Instagram自動投稿（MIMEタイプに完全対応！）
+    // Instagram自動投稿（PNG対応）
     if (url.pathname === "/api/post" && request.method === "POST") {
       try {
         const body = await request.json();
-        const { imageBase64, caption, mimeType } = body; // フロントからMIMEタイプ（PNGかJPEGか）を受け取る
+        const { imageBase64, caption, mimeType } = body;
 
         if (!imageBase64 || !caption) {
           return new Response(JSON.stringify({ error: "画像または文章がありません。" }), {
@@ -118,13 +118,13 @@ export default {
           });
         }
 
-        const imageMime = mimeType || "image/jpeg"; // 指定がなければデフォルトはJPEG
+        const imageMime = mimeType || "image/jpeg";
         const extension = imageMime.split("/")[1] || "jpg";
 
         // Step1: base64をバイナリに変換
         const imageBytes = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
 
-        // Step2: R2に一時保存（拡張子を動的に合わせる）
+        // Step2: R2に一時保存
         const fileName = `post-${Date.now()}.${extension}`;
         await env.IMAGE_BUCKET.put(fileName, imageBytes, {
           httpMetadata: { contentType: imageMime }
@@ -133,7 +133,7 @@ export default {
         // Step3: R2のパブリックURLを組み立て
         const imageUrl = `https://${env.R2_PUBLIC_DOMAIN}/${fileName}`;
 
-        // Step4: 金庫（KV）からInstagram長期アクセストークンを自動読み込み！
+        // Step4: 金庫（KV）からInstagram長期アクセストークンを自動読み込み
         const accessToken = await env.TOKEN_STORE.get("INSTAGRAM_ACCESS_TOKEN");
         if (!accessToken) {
           throw new Error("データベース(KV)内にInstagramアクセストークンが見つかりません。");
@@ -141,7 +141,7 @@ export default {
         
         const igUserId = env.IG_USER_ID;
 
-        // Meta Graph APIでコンテナ作成
+        // Meta Graph APIでコンテナ作成 (v25.0)
         const containerRes = await fetch(
           `https://graph.facebook.com/v25.0/${igUserId}/media`,
           {
@@ -205,15 +205,14 @@ export default {
     return env.ASSETS.fetch(request);
   },
 
-  // ===== 2. 【新規追加】タイマー（Cron）が起動した時の自動更新処理 =====
+  // ===== 2. タイマー（Cron）が起動した時の自動更新処理（パラメータを完璧に修正！） =====
   async scheduled(event, env, ctx) {
     ctx.waitUntil((async () => {
       try {
-        // 金庫（KV）から、現在の古い長期トークンを読み込む
         const currentToken = await env.TOKEN_STORE.get("INSTAGRAM_ACCESS_TOKEN");
         if (!currentToken) return;
 
-        // MetaのAPIを叩いて、有効期限をさらに60日延長（リフレッシュ）する
+        // 【修正】正しいInstagramアプリIDとシークレットをMetaに送り、期限を延長します
         const url = `https://graph.facebook.com/v25.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${env.INSTAGRAM_APP_ID}&client_secret=${env.INSTAGRAM_APP_SECRET}&fb_exchange_token=${currentToken}`;
         
         const response = await fetch(url);
@@ -226,7 +225,6 @@ export default {
         const newToken = data.access_token;
 
         if (newToken) {
-          // 新しいトークンを金庫（KV）に上書き保存！
           await env.TOKEN_STORE.put("INSTAGRAM_ACCESS_TOKEN", newToken);
           console.log("Instagramアクセストークンを自動更新しました！");
         }
