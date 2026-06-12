@@ -1,6 +1,5 @@
 name: Deploy to Cloudflare Workers
 
-# mainブランチにコードが保存(Push)されたら自動で動かす設定
 on:
   push:
     branches:
@@ -19,12 +18,13 @@ jobs:
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          # ここでGitHubの金庫からCloudflareに鍵をパス（注入）します
           secrets: |
             GEMINI_API_KEY
             INSTAGRAM_ACCESS_TOKEN
             IG_USER_ID
+            R2_PUBLIC_DOMAIN
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          R2_PUBLIC_DOMAIN: ${{ secrets.R2_PUBLIC_DOMAIN }}
