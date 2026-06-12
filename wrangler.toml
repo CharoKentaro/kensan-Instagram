@@ -23,7 +23,7 @@ bucket_name = "kensan-images"
 # ※作成したKVの実際のIDを、下部の「id」に貼り付けてください
 [[kv_namespaces]]
 binding = "TOKEN_STORE"
-id = "ここに作成したTOKEN_STOREのIDを貼り付けてください"
+id = "7d3cee76be6a4bc6b81eaaef5cdcdeab"
 
 # 追加：トークンを毎月1日に自動更新するための定期タイマー（Cron Trigger）
 [triggers]
