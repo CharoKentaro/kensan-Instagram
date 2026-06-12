@@ -1,10 +1,10 @@
 // src/index.js
-// 心臓部: Gemini 2.5 Flash APIを呼び出し、Instagram用の文章を生成する処理
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    // ===== 既存機能：AI文章生成（一切変更なし・デグレ防止） =====
     if (url.pathname === "/api/generate" && request.method === "POST") {
       const GEMINI_API_KEY = env.GEMINI_API_KEY;
 
@@ -92,7 +92,6 @@ export default {
           throw new Error("AIが正しいJSON形式で返答しませんでした。もう一度お試しください。");
         }
 
-        // 【改善】二重パースを防ぐため、チェックを通過したクリーンなJSONのみを返す
         return new Response(JSON.stringify(parsedCheck), {
           headers: { "Content-Type": "application/json" }
         });
@@ -101,6 +100,96 @@ export default {
         return new Response(JSON.stringify({ error: error.message }), { 
           status: 500, 
           headers: { "Content-Type": "application/json" } 
+        });
+      }
+    }
+
+    // ===== 新規機能：Instagram自動投稿（v2.0） =====
+    if (url.pathname === "/api/post" && request.method === "POST") {
+      try {
+        const body = await request.json();
+        const { imageBase64, caption } = body;
+
+        if (!imageBase64 || !caption) {
+          return new Response(JSON.stringify({ error: "画像または文章がありません。" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" }
+          });
+        }
+
+        // Step1: base64画像をバイナリに変換
+        const imageBytes = Uint8Array.from(atob(imageBase64), c => c.charCodeAt(0));
+
+        // Step2: Cloudflare R2に一時保存（ファイル名は日時でユニークにする）
+        const fileName = `post-${Date.now()}.jpg`;
+        await env.IMAGE_BUCKET.put(fileName, imageBytes, {
+          httpMetadata: { contentType: "image/jpeg" }
+        });
+
+        // Step3: R2のパブリックURLを組み立てる
+        const imageUrl = `https://${env.R2_PUBLIC_DOMAIN}/${fileName}`;
+
+        // Step4: Instagramにコンテナを作成（画像URLと文章を送る）
+        const igUserId = env.IG_USER_ID;
+        const accessToken = env.INSTAGRAM_ACCESS_TOKEN;
+
+        // Meta Graph API (v25.0 で統一)
+        const containerRes = await fetch(
+          `https://graph.facebook.com/v25.0/${igUserId}/media`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              image_url: imageUrl,
+              caption: caption,
+              access_token: accessToken
+            })
+          }
+        );
+
+        if (!containerRes.ok) {
+          const err = await containerRes.text();
+          throw new Error(`Instagram コンテナ作成エラー: ${err}`);
+        }
+
+        const containerData = await containerRes.json();
+        const creationId = containerData.id;
+
+        if (!creationId) {
+          throw new Error("InstagramのコンテナIDを取得できませんでした。");
+        }
+
+        // Step5: コンテナを公開（実際にInstagramに投稿する）
+        const publishRes = await fetch(
+          `https://graph.facebook.com/v25.0/${igUserId}/media_publish`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              creation_id: creationId,
+              access_token: accessToken
+            })
+          }
+        );
+
+        if (!publishRes.ok) {
+          const err = await publishRes.text();
+          throw new Error(`Instagram 公開エラー: ${err}`);
+        }
+
+        const publishData = await publishRes.json();
+
+        // Step6: 投稿成功後、R2から画像を自動削除（容量オーバー防止のお掃除機能）
+        ctx.waitUntil(env.IMAGE_BUCKET.delete(fileName));
+
+        return new Response(JSON.stringify({ success: true, postId: publishData.id }), {
+          headers: { "Content-Type": "application/json" }
+        });
+
+      } catch (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" }
         });
       }
     }
