@@ -214,7 +214,7 @@ export default {
         if (!currentToken) return;
 
         // MetaのAPIを叩いて、有効期限をさらに60日延長（リフレッシュ）する
-        const url = `https://graph.facebook.com/v25.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${env.CF_API_TOKEN}&client_secret=${env.INSTAGRAM_APP_SECRET}&fb_exchange_token=${currentToken}`;
+        const url = `https://graph.facebook.com/v25.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${env.INSTAGRAM_APP_ID}&client_secret=${env.INSTAGRAM_APP_SECRET}&fb_exchange_token=${currentToken}`;
         
         const response = await fetch(url);
         if (!response.ok) {
