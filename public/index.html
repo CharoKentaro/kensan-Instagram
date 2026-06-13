@@ -64,11 +64,14 @@
 
     .persona-btns {
       display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
+      flex-direction: column; /* 縦並びに変更 */
+      align-items: center; /* 左右中央揃えに変更 */
+      gap: 12px; /* ボタン同士の隙間を少し広げて押しやすく */
     }
     .btn-persona {
-      padding: 10px 16px;
+      width: 80%; /* 横幅を揃えてスタイリッシュに */
+      max-width: 300px; /* PCで横に広がりすぎないように制限 */
+      padding: 12px 16px; /* タップしやすいように上下の余白を拡大 */
       border: 1px solid #e5e7eb;
       border-radius: 20px;
       background: #ffffff;
